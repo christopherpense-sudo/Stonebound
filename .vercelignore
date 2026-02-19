@@ -1,0 +1,8 @@
+node_modules
+dist
+googlesites.html
+README.md
+Implementation_Plan.md
+look_and_feel.md
+.gitignore
+.env.local
