@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stonebound 2.34 - All-in-One</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #1a1a1a; color: #eee; font-family: 'Courier New', Courier, monospace; overflow: hidden; }
+        .game-wrapper { margin: 0; display: flex; flex-direction: row; align-items: center; justify-content: center; height: 100vh; width: 100vw; touch-action: none; }
+        .main-container { display: flex; flex-direction: column; align-items: center; position: relative; }
+        canvas { image-rendering: pixelated; border: 4px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); max-width: 95vw; max-height: 80vh; background: #1e3a8a; }
+        .controls { margin-top: 20px; text-align: center; background: #333; padding: 10px 20px; border-radius: 8px; }
+        kbd { background: #eee; color: #333; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        #sideMenu { position: absolute; left: 20px; top: 20px; width: 180px; background: rgba(30, 30, 30, 0.95); border: 2px solid #555; padding: 15px; border-radius: 8px; display: none; flex-direction: column; gap: 10px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 100; }
+        .menu-title { font-size: 1.2rem; border-bottom: 1px solid #555; padding-bottom: 5px; margin-bottom: 10px; color: #4da862; text-align: center; }
+        .menu-option { padding: 10px; cursor: pointer; border-radius: 4px; transition: background 0.2s; }
+        .menu-option.selected { background: #4da862; color: #fff; }
+        #questionModal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); min-width: 320px; width: auto; max-width: 900px; background: rgba(30, 30, 30, 0.98); border: 4px solid #4da862; padding: 20px; border-radius: 12px; display: none; flex-direction: row; align-items: center; gap: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 200; text-align: center; }
+        #inventoryModal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 600px; height: 500px; background: rgba(30, 30, 30, 0.98); border: 4px solid #4287f5; padding: 20px; border-radius: 12px; display: none; flex-direction: column; gap: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 200; text-align: center; }
+        #saveModal, #loadModal, #settingsModal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 500px; background: rgba(30, 30, 30, 0.98); border: 4px solid #fbc02d; padding: 20px; border-radius: 12px; display: none; flex-direction: column; gap: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 210; text-align: center; }
+        #settingsModal { border-color: #8b6b4d; }
+        #wizardOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 500; color: #fff; font-size: 2rem; }
+        #invList { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; width: 100%; overflow-y: auto; }
+        .inv-item { background: #444; padding: 10px; cursor: pointer; border-radius: 4px; border: 1px solid #666; margin: 0; text-align: center; }
+        .inv-item:hover { background: #555; border-color: #4287f5; }
+        .inv-item.selected { background: #4da862; color: #fff; border-color: #fff; }
+        .q-text { font-size: 1.1rem; color: #fff; margin-bottom: 10px; }
+        .q-btn { background: #333; border: 2px solid #555; color: #eee; padding: 10px; cursor: pointer; font-family: inherit; border-radius: 4px; transition: all 0.2s; }
+        .q-btn:hover, .q-btn.selected { background: #4da862; border-color: #4da862; color: #fff; }
+        #startScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000 url('https://lh3.googleusercontent.com/d/1a-IHtvf47Pc1JhBdcPnVo0XeqIXXLlXV') center/cover no-repeat; display: flex; flex-direction: row; justify-content: center; align-items: center; z-index: 300; gap: 20px; }
+        #startScreen::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: -1; }
+        .start-btn { font-size: 1.5rem; padding: 15px 30px; background: rgba(0, 0, 0, 0.5); border: 4px solid rgba(77, 168, 98, 0.8); color: #fff; cursor: pointer; transition: transform 0.2s; border-radius: 4px; backdrop-filter: blur(4px); text-shadow: 2px 2px 0 #000; }
+        .start-btn:hover, .start-btn.selected { transform: scale(1.1); background: rgba(0, 0, 0, 0.7); border-color: #fff; }
+        textarea { width: 100%; height: 100px; background: #222; color: #4da862; border: 1px solid #555; padding: 10px; font-family: monospace; resize: none; }
+        .sound-toggle { margin-right: 20px; padding: 15px; background: #333; border: 4px solid #4da862; color: #fff; cursor: pointer; font-family: inherit; font-size: 1.1rem; border-radius: 8px; transition: all 0.2s; z-index: 400; align-self: flex-end; margin-bottom: 50px; }
+        .sound-toggle:hover { background: #4da862; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="module">
+        import React, { useEffect, useRef, useState } from 'https://esm.sh/react@19.2.3';
+        import ReactDOM from 'https://esm.sh/react-dom@19.2.3/client';
+        import LZString from 'https://esm.sh/lz-string@1.5.0';
+
+        // --- CONSTANTS & DATA ---
+        const TILE_SIZE = 128;
+        const SAFE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+        const BASE = BigInt(SAFE_ALPHABET.length);
+
+        const baseWorldMap = [[2,2,2,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,0,3,37,0,5,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,2,2,2,6,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,2,2,2,6,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,2,2,2,6,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,2,2,2,6,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,2,2,2,6,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,2,2,2,6,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,2,2,2,6,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,2,2,2,6,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,2,2,2,6,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,2,2],[2,2,2,2,2,2,6,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,29,0,0,2,2,2,2],[2,2,2,0,0,0,0,0,3,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,2,2,0,29,0,0,0,29,0,2,2,2],[2,2,0,0,3,0,0,4,0,0,3,0,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,7,3,0,0,0,3,0,0,38,6,6,6,6,6,6,6,6,6,0,0,0,0,0,0,0,0,2,2],[2,0,0,0,0,0,4,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,0,3,0,0,0,0,0,0,0,0,0,0,0,3,0,2,2,2,2,2,2,2,2,0,29,0,0,0,29,0,2,2,2],[2,0,4,4,4,4,4,0,3,0,0,0,6,6,6,6,6,6,6,6,6,6,6,6,4,4,4,4,4,4,4,4,4,4,4,4,4,0,2,2,2,2,2,2,2,2,0,0,29,0,0,2,2,2,2],[2,0,0,0,0,3,0,0,0,5,4,4,4,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,5,0,0,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,2,2],[2,2,0,3,0,0,0,0,0,0,4,0,2,2,2,2,2,2,2,2,2,2,2,2,0,0,3,0,0,0,0,3,0,0,5,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,0,0,0,0,0,3,0,0,4,0,3,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,4,4,4,4,4,0,0,0,3,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,3,0,4,4,4,4,4,4,0,2,2,2,2,2,2,2,2,2,2,2,2,0,3,0,0,4,0,0,0,4,0,3,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,2,0,0,0,0,0,0,0,2,2,2,2,2,31,31,31,2,2,2,2,2,0,0,0,0,4,0,0,0,4,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,2,6,2,2,2,2,2,2,2,2,2,2,31,31,31,31,31,2,2,2,2,0,0,5,0,0,0,3,0,0,5,0,0,3,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,0,35,0,0,0,2,2,2,2,2,2,2,2,31,33,31,32,31,31,31,6,6,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,0,36,34,0,0,2,2,2,2,2,2,2,2,2,31,31,31,31,31,2,2,2,2,0,0,5,0,0,0,3,0,0,5,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,0,0,0,2,2,2,2,2,2,2,2,2,2,2,31,31,31,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]];
+        const baseInteriorMap = [[9,9,9,9,9,9,9,9,9,9,9,9],[9,8,8,8,9,8,8,18,19,18,8,9],[9,8,16,8,9,8,8,8,8,8,8,9],[9,8,8,8,8,8,8,8,8,17,8,9],[9,8,17,8,9,8,8,9,9,9,9,9],[9,9,9,9,9,8,8,8,8,8,8,9],[9,8,8,8,8,8,8,16,8,16,8,9],[9,8,8,8,9,8,17,9,17,8,8,9],[9,8,8,8,9,8,8,9,8,8,8,9],[9,8,8,8,9,8,8,8,8,8,8,9],[9,8,8,8,9,10,8,9,8,8,8,9],[9,9,9,9,9,9,9,9,9,9,9,9]];
+        const caveMap = [[12,12,12,12,12,12,12,12,12,12],[12,20,13,13,12,13,13,13,13,12],[12,13,13,13,13,15,13,13,13,12],[12,13,12,12,12,13,13,13,13,12],[12,13,12,13,13,13,13,13,13,12],[12,13,12,13,13,13,12,12,12,12],[12,13,13,13,13,13,13,13,13,12],[12,12,12,12,14,12,12,12,12,12]];
+
+        const magnusFacts = {
+            rockCycle: ["Igneous = \"Fire Rock\": It’s made from cooled-down magma or lava. If it’s frozen fire, it’s igneous.", "Sedimentary = \"Layer Rock\": It’s made from tiny bits of sand, dirt, and shells glued together over a long time.", "Metamorphic = \"Change Rock\": It’s a rock that got squished and baked by heat and pressure until it turned into something new.", "Magma vs. Lava: If it’s inside the Earth, it’s magma. If it shoots out of a volcano, it’s lava. Same stuff, different name.", "The Big Melt: Any rock—no matter what type—will turn back into liquid magma if it gets hot enough.", "Super Slow: You won’t see a rock change in your lifetime. These changes usually take millions of years.", "Pressure: Deep underground, the weight of the Earth is so heavy it can actually bend and change solid rock without melting it.", "The Cycle Never Stops: Rocks are always moving, breaking, melting, and reforming. Earth never runs out of \"new\" rocks."],
+            erosion: ["Weathering = Breaking: This is when nature uses \"tools\" like ice, rain, and plant roots to crack and crumble big rocks into tiny pieces (sediment).", "Erosion = Moving: This is the \"getaway car.\" It’s when water, wind, or ice picks up those tiny pieces and carries them away to a new spot.", "Deposition = Dropping: This is when the wind or water slows down and \"deposits\" (drops) the sediment. It's like the rock bits finally finding a place to sit down.", "Water is the Boss: Flowing water (like rivers and rain) is the #1 cause of erosion on Earth. It is way more powerful than wind!", "Ice Can Move Mountains: Glaciers are giant \"ice rivers.\" As they crawl along, they act like giant bulldozers, scraping up rocks and moving them miles away.", "Gravity Plays a Part: Gravity is the silent helper. It pulls rocks down hills (landslides) and makes sure sediment eventually settles at the bottom of lakes and oceans.", "Roots are Stronger than Rock: Have you ever seen a sidewalk crack because of a tree root? That’s \"biological weathering.\" Plants can actually grow through solid stone!", "Building New Land: Deposition isn't just \"dropping trash\"—it builds things! Beaches, sand dunes, and river deltas are all created because of deposition."],
+            superposition: ["Fossils: Only sedimentary rocks have fossils. If you tried to put a fossil in the other two, it would either melt or get crushed!", "Oldest at the Bottom: In a stack of rock layers, the oldest layer is always at the bottom and the youngest is at the top. It’s like a stack of pancakes—you had to put the first one down before you could stack others on top.", "The Laundry Pile Rule: Think of your laundry basket. The clothes you wore on Monday are at the very bottom, and the shirt you just took off today is on the top. Rocks work the same way!", "Sedimentary Only: This law mostly applies to sedimentary rocks because they are laid down in flat layers (called strata) over time.", "Relative Dating: This law doesn't tell us the exact \"birthday\" of a rock (like \"this rock is 50 million years old\"). Instead, it tells us the relative age (like \"this rock is older than the one above it\").", "Index fossils: The “Short-Lived Stars: An index fossil comes from a creature that lived for a short time in Earth’s history. If it lived for billions of years, it wouldn't be helpful for telling time!", "The \"One Layer\" Rule: In a perfect world, an index fossil shows up in only one specific layer of rock. If it shows up in only one specific layer of rock. If it shows up in every single layer from bottom to top, it’s not a good index fossil.", "Easy to Recognize: A good index fossil has a unique shape. It needs to be easy for a scientist to look at and say, \"Aha! That’s definitely a Trilobite!\""]
+        };
+
+        const scienceQuestions = [{ q: "What does a plant need to grow?", options: ["Sunlight", "Candy", "Toys"], a: "Sunlight" }, { q: "Which one is hot?", options: ["Ice cube", "Sun", "Snow"], a: "Sun" }, { q: "What do we breathe?", options: ["Water", "Air", "Sand"], a: "Air" }, { q: "Where do fish live?", options: ["In a tree", "In the water", "In the sky"], a: "In the water" }, { q: "How many legs does a spider have?", options: ["Two", "Four", "Eight"], a: "Eight" }, { q: "What color is the sky on a sunny day?", options: ["Green", "Blue", "Purple"], a: "Blue" }, { q: "What freezes into ice?", options: ["Water", "Milk", "Juice"], a: "Water" }, { q: "What do bees make?", options: ["Honey", "Jam", "Butter"], a: "Honey" }];
+
+        const caveQuestions = {
+            1: { q: "Which layer is the oldest? A, B, F, or D.", options: ["A", "B", "F", "D"], a: "A", img: "https://lh3.googleusercontent.com/d/1W7jbLT8cZ-loqAKRsJOPAz-YaC8VpAFh" },
+            2: { q: "Rock layer X at location B is most likely the same relative as which rock layer at location A?", options: ["1", "2", "3", "4"], a: "3", img: "https://lh3.googleusercontent.com/d/1Xmsz3vj_s7f7pnAAgZPd8evSW4a74CLt" },
+            3: { q: "The Law of Superposition is most commonly applied to which type of rock?", options: ["Igneous", "Metamorphic", "Sedimentary", "Volcanic"], a: "Sedimentary", img: null },
+            4: { q: "What is the 3rd oldest thing that happened?", options: ["Layer R", "Layer E", "The Lava", "The Earthquake"], a: "The Earthquake", img: "https://lh3.googleusercontent.com/d/1jvhwZ75c9Iq7bKZ5NoiX5FUOONet2o_d" },
+            5: { q: "Which of these fossils is the Index Fossil?", options: ["Ammonite", "Brachiopod", "Trilobite", "Crinoid Stem"], a: "Ammonite", img: "https://lh3.googleusercontent.com/d/1tWMKVDHXNpCflkVvwYNNKUbqQkY2OhM8" },
+            6: { q: "Which of these is the Index Fossil?", options: ["A", "B", "C", "D"], a: "B", img: "https://lh3.googleusercontent.com/d/1wN2KerNTMZfjosk7z0rI4IudHfSXRcUb" },
+            7: { q: "According to the Law of Superposition, where would you find the oldest rock layer in an undisturbed sequence of sedimentary rocks?", options: ["In the middle of the sequence", "The age cannot be determined by position", "At the very bottom", "At the very top"], a: "At the very bottom", img: null },
+            8: { q: "Relative dating using superposition provides:", options: ["The exact age of a rock in years", "The temperature at which the rock formed", "The order of events without providing specific dates", "The chemical composition of the rock"], a: "The order of events without providing specific dates", img: null },
+            9: { q: "If an igneous intrusion cuts through several sedimentary layers, is the intrusion older or younger than the layers it cuts through?", options: ["It depends on the type of magma", "The same age", "Older", "Younger"], a: "Younger", img: null },
+            10: { q: "What is \"D\"?", options: ["The oldest Layer", "An Intrusion", "An Earthquake", "The Youngest Layer"], a: "An Intrusion", img: "https://lh3.googleusercontent.com/d/1yXVGsXRhdwF2GOahvBqjePsqtWFNikjU" }
+        };
+
+        const caveSong = { title: "Deep Cavern Echoes", bpm: 85, totalSteps: 64, tracks: [{ name: "Sub Bass", wave: "triangle", volume: 0.8, pan: 0, attack: 0.1, decay: 0.2, sustain: 0.8, release: 0.2, notes: [{ durationSteps: 8, startStep: 0, note: "B1", velocity: 0.7 }, { durationSteps: 8, startStep: 8, note: "D2", velocity: 0.7 }, { durationSteps: 8, startStep: 16, note: "E1", velocity: 0.7 }, { durationSteps: 8, startStep: 24, note: "G1", velocity: 0.7 }, { durationSteps: 8, startStep: 32, note: "B1", velocity: 0.7 }, { durationSteps: 8, startStep: 40, note: "D2", velocity: 0.7 }, { durationSteps: 8, startStep: 48, note: "F#1", velocity: 0.7 }, { durationSteps: 8, startStep: 56, note: "E1", velocity: 0.7 }] }, { name: "Echo Melody", wave: "square", volume: 0.6, pan: 0.2, attack: 0.05, decay: 0.1, sustain: 0.5, release: 0.4, notes: [{ durationSteps: 4, startStep: 0, note: "B4", velocity: 0.5 }, { durationSteps: 4, startStep: 8, note: "D5", velocity: 0.5 }, { durationSteps: 4, startStep: 12, note: "F#5", velocity: 0.5 }, { durationSteps: 8, startStep: 16, note: "B5", velocity: 0.6 }, { durationSteps: 4, startStep: 32, note: "A4", velocity: 0.5 }, { durationSteps: 4, startStep: 36, note: "G4", velocity: 0.5 }, { durationSteps: 8, startStep: 40, note: "F#4", velocity: 0.6 }, { durationSteps: 4, startStep: 48, note: "E4", velocity: 0.4 }, { durationSteps: 4, startStep: 52, note: "D4", velocity: 0.4 }, { durationSteps: 4, startStep: 56, note: "C#4", velocity: 0.4 }, { durationSteps: 4, startStep: 60, note: "B3", velocity: 0.4 }] }, { name: "Ambient Pad", wave: "triangle", volume: 0.4, pan: -0.5, attack: 0.5, decay: 0.5, sustain: 0.9, release: 0.8, notes: [{ durationSteps: 16, startStep: 0, note: "F#3", velocity: 0.3 }, { durationSteps: 16, startStep: 16, note: "G3", velocity: 0.3 }, { durationSteps: 16, startStep: 32, note: "D3", velocity: 0.3 }, { durationSteps: 16, startStep: 48, note: "C#3", velocity: 0.3 }] }, { name: "Water Drip", wave: "noise", volume: 0.3, pan: 0.8, attack: 0.01, decay: 0.05, sustain: 0, release: 0.05, notes: [{ durationSteps: 1, startStep: 0, note: null, velocity: 0.2 }, { durationSteps: 1, startStep: 8, note: null, velocity: 0.2 }, { durationSteps: 1, startStep: 16, note: null, velocity: 0.2 }, { durationSteps: 1, startStep: 24, note: null, velocity: 0.2 }, { durationSteps: 1, startStep: 32, note: null, velocity: 0.2 }, { durationSteps: 1, startStep: 40, note: null, velocity: 0.2 }, { durationSteps: 1, startStep: 48, note: null, velocity: 0.2 }, { durationSteps: 1, startStep: 56, note: null, velocity: 0.2 }] }] };
+        const overworldSong = { title: "Overworld Breeze", bpm: 110, totalSteps: 64, tracks: [{ name: "Melody", wave: "square", volume: 0.12, pan: 0, attack: 0.05, decay: 0.1, sustain: 0.2, release: 0.1, notes: [{ durationSteps: 4, startStep: 0, note: "C5", velocity: 0.6 }, { durationSteps: 4, startStep: 4, note: "D5", velocity: 0.6 }, { durationSteps: 8, startStep: 8, note: "E5", velocity: 0.6 }, { durationSteps: 8, startStep: 16, note: "C5", velocity: 0.6 }, { durationSteps: 4, startStep: 24, note: "D5", velocity: 0.6 }, { durationSteps: 4, startStep: 28, note: "E5", velocity: 0.6 }, { durationSteps: 8, startStep: 32, note: "F5", velocity: 0.6 }, { durationSteps: 40, startStep: 40, note: "E5", velocity: 0.6 }, { durationSteps: 8, startStep: 48, note: "D5", velocity: 0.6 }, { durationSteps: 8, startStep: 56, note: "C5", velocity: 0.6 }] }, { name: "Harmony", wave: "triangle", volume: 0.1, pan: 0.2, attack: 0.1, decay: 0.2, sustain: 0.5, release: 0.2, notes: [{ durationSteps: 16, startStep: 0, note: "C4", velocity: 0.5 }, { durationSteps: 16, startStep: 16, note: "A3", velocity: 0.5 }, { durationSteps: 16, startStep: 32, note: "F3", velocity: 0.5 }, { durationSteps: 16, startStep: 48, note: "G3", velocity: 0.5 }] }, { name: "Bass", wave: "triangle", volume: 0.2, pan: -0.2, attack: 0.05, decay: 0.1, sustain: 0.8, release: 0.1, notes: [{ durationSteps: 4, startStep: 0, note: "C3", velocity: 0.7 }, { durationSteps: 4, startStep: 8, note: "C3", velocity: 0.7 }, { durationSteps: 4, startStep: 16, note: "A2", velocity: 0.7 }, { durationSteps: 4, startStep: 24, note: "A2", velocity: 0.7 }, { durationSteps: 4, startStep: 32, note: "F2", velocity: 0.7 }, { durationSteps: 4, startStep: 40, note: "F2", velocity: 0.7 }, { durationSteps: 4, startStep: 48, note: "G2", velocity: 0.7 }, { durationSteps: 4, startStep: 56, note: "G2", velocity: 0.7 }] }, { name: "Percussion", wave: "noise", volume: 0.08, pan: 0, attack: 0.01, decay: 0.05, sustain: 0, release: 0.05, notes: [{ durationSteps: 1, startStep: 0, note: null, velocity: 0.5 }, { durationSteps: 1, startStep: 8, note: null, velocity: 0.5 }, { durationSteps: 1, startStep: 16, note: null, velocity: 0.5 }, { durationSteps: 1, startStep: 24, note: null, velocity: 0.5 }, { durationSteps: 1, startStep: 32, note: null, velocity: 0.5 }, { durationSteps: 1, startStep: 40, note: null, velocity: 0.5 }, { durationSteps: 1, startStep: 48, note: null, velocity: 0.5 }, { durationSteps: 1, startStep: 56, note: null, velocity: 0.5 }, { durationSteps: 1, startStep: 4, note: null, velocity: 0.3 }, { durationSteps: 1, startStep: 12, note: null, velocity: 0.3 }, { durationSteps: 1, startStep: 20, note: null, velocity: 0.3 }, { durationSteps: 1, startStep: 28, note: null, velocity: 0.3 }, { durationSteps: 1, startStep: 36, note: null, velocity: 0.3 }, { durationSteps: 1, startStep: 44, note: null, velocity: 0.3 }, { durationSteps: 1, startStep: 52, note: null, velocity: 0.3 }, { durationSteps: 1, startStep: 60, note: null, velocity: 0.3 }] }] };
+
+        // --- CORE LOGIC ---
+        class SeededRNG {
+            constructor(seed) { this.seed = seed; }
+            next() { this.seed = (this.seed * 9301 + 49297) % 233280; return this.seed / 233280; }
+        }
+
+        const applyCheat = (code, gameData) => {
+            const cleanCode = code.toUpperCase().trim();
+            if (cleanCode === "GREEN GEMS!") {
+                const { caveLevels } = gameData;
+                caveLevels.forEach(level => {
+                    for (let r = 0; r < level.length; r++) {
+                        for (let c = 0; c < level[r].length; c++) {
+                            if (level[r][c] === 22 || level[r][c] === 24) level[r][c] = 23;
+                        }
+                    }
+                });
+                alert("CHEAT ACTIVATED: CRYSTALS ENERGIZED!");
+                return true;
+            }
+            return false;
+        };
+
+        const encodeSave = (data) => {
+            const jsonString = JSON.stringify(data);
+            const compressed = LZString.compressToUint8Array(jsonString);
+            let value = 0n;
+            for (const byte of compressed) value = (value << 8n) + BigInt(byte);
+            let result = "";
+            if (value === 0n) return SAFE_ALPHABET[0];
+            while (value > 0n) { result = SAFE_ALPHABET[Number(value % BASE)] + result; value /= BASE; }
+            return result;
+        };
+
+        const decodeSave = (code) => {
+            try {
+                let value = 0n;
+                for (const char of code) {
+                    const idx = SAFE_ALPHABET.indexOf(char);
+                    if (idx === -1) return null;
+                    value = value * BASE + BigInt(idx);
+                }
+                const bytes = [];
+                while (value > 0n) { bytes.unshift(Number(value & 255n)); value >>= 8n; }
+                const uint8 = new Uint8Array(bytes);
+                return JSON.parse(LZString.decompressFromUint8Array(uint8));
+            } catch { return null; }
+        };
+
+        function generateAssets(Assets, getActiveCrystalCount, player) {
+            Assets.tiles.grass = (ctx, time) => { ctx.fillStyle = '#4da862'; ctx.fillRect(0,0, TILE_SIZE, TILE_SIZE); for(let i=0; i<15; i++) { let ox = (i * 17) % 32, oy = (i * 23) % 32, move = Math.sin(time * 0.005 + i) * 1; ctx.fillStyle = '#3d8c50'; ctx.fillRect((ox + move)*4, oy*4, 4, 8); ctx.fillStyle = '#63c77d'; ctx.fillRect((ox + move)*4, oy*4, 4, 4); } };
+            Assets.tiles.water = (ctx, time) => { ctx.fillStyle = '#1e3a8a'; ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE); const waveColors = ['#4287f5', '#3461c1', '#2a52be']; for (let i = 0; i < 12; i++) { const baseX = (i * 47) % TILE_SIZE, baseY = (i * 31) % TILE_SIZE, xShift = Math.sin(time * 0.001 + i) * 12, yShift = Math.cos(time * 0.0015 + i) * 4; ctx.strokeStyle = waveColors[i % 3]; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(baseX + xShift, baseY + yShift); ctx.quadraticCurveTo(baseX + xShift + 4, baseY + yShift + 6, baseX + xShift + 8, baseY + yShift); ctx.stroke(); } };
+            Assets.tiles.path = (ctx) => { ctx.fillStyle = '#8b6b4d'; ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE); const dirtColors = ['#765a41', '#a68564', '#5d4632']; for(let i=0; i<64; i++) { ctx.fillStyle = dirtColors[i % 3]; ctx.fillRect((i * 37) % TILE_SIZE, (i * 53) % TILE_SIZE, 4, 4); } };
+            Assets.tiles.bridge = (ctx) => { ctx.fillStyle = '#1e3a8a'; ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE); ctx.fillStyle = '#5c4033'; ctx.fillRect(0, 10, TILE_SIZE, TILE_SIZE - 20); for(let i = 0; i < TILE_SIZE; i += 16) { ctx.fillStyle = '#3d2b22'; ctx.fillRect(i, 10, 2, TILE_SIZE - 20); } };
+            Assets.tiles.volcanicGround = (ctx) => { ctx.fillStyle = '#2c2c2c'; ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE); ctx.fillStyle = '#1a1a1a'; for(let i=0; i<8; i++) ctx.fillRect((i * 37) % TILE_SIZE, (i * 53) % TILE_SIZE, 6, 6); };
+            Assets.tiles.volcano = (ctx, time) => { Assets.tiles.volcanicGround(ctx); ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(64, 110, 90, 30, 0, 0, Math.PI*2); ctx.fill(); const grad = ctx.createLinearGradient(64, -110, 64, 110); grad.addColorStop(0, '#5d4037'); grad.addColorStop(1, '#2c2c2c'); ctx.fillStyle = grad; ctx.beginPath(); ctx.moveTo(-26, 110); ctx.quadraticCurveTo(19, 0, 24, -110); ctx.lineTo(104, -110); ctx.quadraticCurveTo(109, 0, 154, 110); ctx.closePath(); ctx.fill(); };
+            Assets.tiles.magnus = (ctx, time) => { const bob = Math.sin(time * 0.003) * 2; Assets.tiles.volcanicGround(ctx); ctx.fillStyle = '#1a1a1a'; ctx.fillRect(50, 80, 10, 30); ctx.fillRect(68, 80, 10, 30); ctx.fillRect(44, 50+bob, 40, 40); ctx.fillStyle = '#ff5722'; ctx.fillRect(56, 35+bob, 6, 4); ctx.fillRect(66, 35+bob, 6, 4); };
+            Assets.tiles.monsterStatue = (ctx, time) => { const eyesAwakened = getActiveCrystalCount() >= 10; ctx.fillStyle = '#424242'; ctx.fillRect(44, 55, 40, 55); ctx.fillStyle = eyesAwakened ? `rgba(255, 109, 0, ${Math.sin(time*0.01)*0.2+0.8})` : '#ff6d00'; ctx.fillRect(54, 42, 6, 4); ctx.fillRect(68, 42, 6, 4); };
+            Assets.tiles.crystal = (ctx, time, state) => { const glow = Math.sin(time * 0.005) * 0.2 + 0.8; ctx.save(); ctx.translate(64, 70); ctx.scale(glow, glow); ctx.fillStyle = state === 'green' ? '#00ff00' : (state === 'red' ? '#ff0000' : '#00ffff'); ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(20, 0); ctx.lineTo(0, 40); ctx.lineTo(-20, 0); ctx.closePath(); ctx.fill(); ctx.restore(); };
+            Assets.tiles.boulder = (ctx) => { ctx.fillStyle = '#4a4a4a'; ctx.beginPath(); ctx.arc(64, 80, 40, 0, Math.PI*2); ctx.fill(); };
+            Assets.tiles.tree = (ctx, time) => { ctx.fillStyle = '#5c4033'; ctx.fillRect(52, 75, 24, 45); ctx.fillStyle = '#4da862'; ctx.beginPath(); ctx.arc(64, 50, 40, 0, Math.PI*2); ctx.fill(); };
+            Assets.tiles.caveWall = (ctx) => { ctx.fillStyle = '#2d2d2d'; ctx.fillRect(0,0, TILE_SIZE, TILE_SIZE); ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, TILE_SIZE, 20); };
+            Assets.tiles.caveFloor = (ctx) => { ctx.fillStyle = '#3e2723'; ctx.fillRect(0,0, TILE_SIZE, TILE_SIZE); };
+            Assets.tiles.stairsDown = (ctx) => { ctx.fillStyle = '#111'; ctx.fillRect(20, 20, 88, 88); };
+            Assets.tiles.stairsUp = (ctx) => { ctx.fillStyle = '#444'; ctx.fillRect(20, 20, 88, 88); };
+            Assets.tiles.chestClosed = (ctx) => { ctx.fillStyle = '#3e2723'; ctx.fillRect(24, 55, 80, 45); ctx.fillStyle = '#fbc02d'; ctx.fillRect(60, 65, 8, 10); };
+            Assets.tiles.chestOpen = (ctx) => { ctx.fillStyle = '#212121'; ctx.fillRect(24, 25, 80, 30); ctx.fillStyle = '#3e2723'; ctx.fillRect(24, 75, 80, 25); };
+            
+            const renderChar = (dir, frame) => (ctx) => {
+                const bob = (frame % 2 === 0 && player.isMoving) ? 4 : 0;
+                ctx.fillStyle = '#eeeeee'; ctx.fillRect(44, 50-bob, 40, 40); ctx.fillStyle = '#ffdbac'; ctx.beginPath(); ctx.arc(64, 30-bob, 15, 0, Math.PI*2); ctx.fill();
+            };
+            ['up', 'down', 'left', 'right'].forEach(d => { Assets.character[d] = [0,1,2,3].map(f => renderChar(d, f)); });
+        }
+
+        // --- APP COMPONENT ---
+        const App = () => {
+            const animationFrameRef = useRef(0);
+            const [resetKey, setResetKey] = useState(0);
+            const [isMuted, setIsMuted] = useState(false);
+            const isMutedRef = useRef(false);
+            const shakeTimer = useRef(0);
+            const gamepadConfig = useRef({ up: null, down: null, left: null, right: null, interact: null, menu: null, configured: false });
+            const gamepadState = useRef({});
+
+            useEffect(() => {
+                const canvas = document.getElementById('gameCanvas');
+                const ctx = canvas.getContext('2d');
+                const qModal = document.getElementById('questionModal');
+                const qText = document.getElementById('qText');
+                const qOptions = document.getElementById('qOptions');
+                const invModal = document.getElementById('inventoryModal');
+                const sideMenu = document.getElementById('sideMenu');
+                const startScreen = document.getElementById('startScreen');
+                
+                canvas.width = TILE_SIZE * 5;
+                canvas.height = TILE_SIZE * 5;
+
+                const worldMap = JSON.parse(JSON.stringify(baseWorldMap));
+                worldMap[16][1] = 26; // Chest
+
+                const caveLevels = [caveMap];
+                for(let i=1; i<=10; i++) {
+                    const m = Array(8).fill(0).map((_, y) => Array(10).fill(0).map((_, x) => (y===0||y===7||x===0||x===9 ? 12 : 13)));
+                    m[1][8] = 21; m[1][1] = 22; m[6][1] = 29; caveLevels.push(m);
+                }
+
+                let currentMap = worldMap;
+                let gameState = 'start';
+                let currentCaveDepth = 0;
+                let player = { screenX: 6 * TILE_SIZE, screenY: 15 * TILE_SIZE, dir: 'down', frame: 0, isMoving: false, speed: 5, animTimer: 0, inventory: { sediment: 0, key: 0, hammer: 1, shovel: 1 }, hasPickupAbility: true, hasActivatedStonehenge: false };
+                let isMenuOpen = false, isQuestionOpen = false, isInventoryOpen = false;
+
+                const Assets = { character: { down: [], up: [], left: [], right: [] }, tiles: {} };
+                generateAssets(Assets, () => {
+                    let c = 0; caveLevels.forEach(l => l.forEach(r => r.forEach(t => { if(t===23) c++; }))); return c;
+                }, player);
+
+                const keys = {};
+                window.onkeydown = (e) => { keys[e.code] = true; if(e.code === 'Space') toggleMenu(); if(e.code === 'Enter') checkInteraction(); };
+                window.onkeyup = (e) => keys[e.code] = false;
+
+                const toggleMenu = () => { isMenuOpen = !isMenuOpen; sideMenu.style.display = isMenuOpen ? 'flex' : 'none'; };
+                const checkInteraction = () => {
+                    const gx = Math.floor((player.screenX + 64) / 128), gy = Math.floor((player.screenY + 120) / 128);
+                    const t = currentMap[gy][gx];
+                    if(t === 22) showQuestion(gx, gy);
+                    if(t === 26 && player.inventory.key > 0) { currentMap[gy][gx] = 27; alert("Opened Chest!"); }
+                };
+
+                const showQuestion = (x, y) => {
+                    isQuestionOpen = true; qModal.style.display = 'flex'; qText.innerText = "What is Igneous rock?";
+                    qOptions.innerHTML = ''; ['Frozen Fire', 'Mud', 'Magic'].forEach(opt => {
+                        const b = document.createElement('button'); b.className = 'q-btn'; b.innerText = opt;
+                        b.onclick = () => { currentMap[y][x] = (opt==='Frozen Fire' ? 23 : 24); qModal.style.display = 'none'; isQuestionOpen = false; };
+                        qOptions.appendChild(b);
+                    });
+                };
+
+                document.getElementById('startBtn').onclick = () => { startScreen.style.display = 'none'; gameState = 'overworld'; };
+
+                const gameLoop = () => {
+                    if(gameState !== 'start' && !isMenuOpen && !isQuestionOpen) {
+                        let dx = 0, dy = 0; player.isMoving = false;
+                        if(keys['ArrowUp'] || keys['KeyW']) { dy = -player.speed; player.dir = 'up'; player.isMoving = true; }
+                        if(keys['ArrowDown'] || keys['KeyS']) { dy = player.speed; player.dir = 'down'; player.isMoving = true; }
+                        if(keys['ArrowLeft'] || keys['KeyA']) { dx = -player.speed; player.dir = 'left'; player.isMoving = true; }
+                        if(keys['ArrowRight'] || keys['KeyD']) { dx = player.speed; player.dir = 'right'; player.isMoving = true; }
+                        player.screenX += dx; player.screenY += dy;
+                        if(player.isMoving) { player.animTimer++; if(player.animTimer>8){player.frame=(player.frame+1)%4; player.animTimer=0;} } else player.frame=0;
+                    }
+
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.save();
+                    ctx.translate(-player.screenX + 2*TILE_SIZE, -player.screenY + 2*TILE_SIZE);
+                    for(let y=0; y<currentMap.length; y++) {
+                        for(let x=0; x<currentMap[y].length; x++) {
+                            const t = currentMap[y][x];
+                            ctx.save(); ctx.translate(x*128, y*128);
+                            if(t===0) Assets.tiles.grass(ctx, Date.now());
+                            if(t===2) Assets.tiles.water(ctx, Date.now());
+                            if(t===3) Assets.tiles.tree(ctx, Date.now());
+                            if(t===5) Assets.tiles.boulder(ctx);
+                            if(t===22) Assets.tiles.crystal(ctx, Date.now(), 'normal');
+                            if(t===23) Assets.tiles.crystal(ctx, Date.now(), 'green');
+                            if(t===26) Assets.tiles.chestClosed(ctx);
+                            if(t===27) Assets.tiles.chestOpen(ctx);
+                            if(t===37) Assets.tiles.monsterStatue(ctx, Date.now());
+                            ctx.restore();
+                        }
+                    }
+                    ctx.save(); ctx.translate(player.screenX, player.screenY); Assets.character[player.dir][player.frame](ctx); ctx.restore();
+                    ctx.restore();
+                    animationFrameRef.current = requestAnimationFrame(gameLoop);
+                };
+                gameLoop();
+                return () => cancelAnimationFrame(animationFrameRef.current);
+            }, [resetKey]);
+
+            return React.createElement('div', { className: 'game-wrapper' },
+                React.createElement('div', { className: 'main-container' },
+                    React.createElement('div', { id: 'startScreen' },
+                        React.createElement('div', { id: 'startBtn', className: 'start-btn' }, 'New Game'),
+                        React.createElement('div', { id: 'loadBtn', className: 'start-btn' }, 'Load Game')
+                    ),
+                    React.createElement('div', { id: 'sideMenu' },
+                        React.createElement('div', { className: 'menu-title' }, 'PAUSED'),
+                        React.createElement('div', { className: 'menu-option', onClick: () => setResetKey(k => k+1) }, 'Reset Game')
+                    ),
+                    React.createElement('div', { id: 'questionModal' },
+                        React.createElement('div', { style: { flex: 1 } },
+                            React.createElement('div', { id: 'qText', className: 'q-text' }),
+                            React.createElement('div', { id: 'qOptions' })
+                        )
+                    ),
+                    React.createElement('canvas', { id: 'gameCanvas' }),
+                    React.createElement('div', { className: 'controls' }, 'WASD to move. Enter to interact.')
+                )
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
+    </script>
+</body>
+</html>
