@@ -40,11 +40,13 @@ export const DIALOGUE = {
         ALREADY_TRADED: "Indiana Bones: How's the hat? Looking sharp!"
     },
     ROCKY: {
-        GREETING: "Rocky: What do you need, traveler?",
+        GREETING: "Rocky: Need some supplies for your journey? I've got items for sale for Sediment!",
+        SUCCESS: "Rocky: Pleasure doing business with you!",
+        TOO_POOR: "Rocky: You don't have enough Sediment for that!",
         ITEMS: [
-            { name: "Echo Prism", key: "echoPrisms" },
-            { name: "Quick Escape", key: "quickEscapes" },
-            { name: "Instant Teleport", key: "instantTeleport" }
+            { name: "Echo Prism", key: "echoPrisms", cost: 2 },
+            { name: "Quick Escape", key: "quickEscapes", cost: 25 },
+            { name: "Instant Teleport", key: "instantTeleport", cost: 50, reqDepth: 10 }
         ]
     },
     CHIP: {

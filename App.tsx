@@ -407,7 +407,8 @@ const App: React.FC = () => {
             screenY: 15 * TILE_SIZE, 
             dir: 'down', frame: 0, isMoving: false, speed: 5, animTimer: 0,
             inventory: { echoPrisms: 0, quickEscapes: 0, hammer: 0, key: 0, sediment: 0, shovel: 0, fossils: 0, indexFossil: 0, explorerHat: 0, metamorphicPebble: 0, arcaneEye: 0, instantTeleport: 0 } as any,
-            hasPickupAbility: false, foundDigSite: false, hasActivatedStonehenge: false, wearingHat: false
+            hasPickupAbility: false, foundDigSite: false, hasActivatedStonehenge: false, wearingHat: false,
+            reachedDepth10: false
         };
 
         function generateKeyLocation() {
@@ -435,6 +436,7 @@ const App: React.FC = () => {
             player.inventory.explorerHat = 0; player.inventory.metamorphicPebble = 0; player.inventory.arcaneEye = 0;
             player.inventory.instantTeleport = 0; player.hasPickupAbility = false;
             player.foundDigSite = false; player.hasActivatedStonehenge = false; player.wearingHat = false;
+            player.reachedDepth10 = false;
              if (worldMap[16][1] === 27) worldMap[16][1] = 26;
              worldMap[24][26] = 5;
              for(let y=0; y<worldMap.length; y++) {
@@ -871,7 +873,9 @@ const App: React.FC = () => {
                     if (targetTile === 10) { gameState = 'overworld'; currentMap = worldMap; player.screenX = 27 * TILE_SIZE; player.screenY = 15 * TILE_SIZE; return; }
                     if (targetTile === 14) { gameState = 'overworld'; currentMap = worldMap; player.screenX = 26 * TILE_SIZE; player.screenY = 25 * TILE_SIZE; return; }
                     if (targetTile === 20 && currentCaveDepth < 10) {
-                        currentCaveDepth++; currentMap = caveLevels[currentCaveDepth];
+                        currentCaveDepth++; 
+                        if (currentCaveDepth === 10) player.reachedDepth10 = true;
+                        currentMap = caveLevels[currentCaveDepth];
                         for(let r=0; r<currentMap.length; r++) for(let c=0; c<currentMap[0].length; c++) if (currentMap[r][c] === 21) { player.screenX = c * TILE_SIZE; player.screenY = (r < currentMap.length - 1 && currentMap[r+1][c] !== 12) ? (r+1)*TILE_SIZE : (r>0 && currentMap[r-1][c] !== 12) ? (r-1)*TILE_SIZE : r*TILE_SIZE; return; }
                         return;
                     }
@@ -968,8 +972,20 @@ const App: React.FC = () => {
             isQuestionOpen = true; Object.keys(keys).forEach(key => keys[key] = false); qImage.style.display = 'none'; 
             qText.textContent = DIALOGUE.ROCKY.GREETING; qOptions.innerHTML = '';
             DIALOGUE.ROCKY.ITEMS.forEach(item => {
-                const btn = document.createElement('button'); btn.className = 'q-btn'; btn.textContent = item.name;
-                btn.onclick = () => { player.inventory[item.key as keyof typeof player.inventory]++; showMessage(`Rocky gave you a ${item.name}!`); };
+                if (item.reqDepth && !player.reachedDepth10) return;
+                
+                const btn = document.createElement('button'); btn.className = 'q-btn'; 
+                btn.textContent = `${item.name} (${item.cost} Sediment)`;
+                btn.onclick = () => { 
+                    if (player.inventory.sediment >= item.cost) {
+                        player.inventory.sediment -= item.cost;
+                        player.inventory[item.key as keyof typeof player.inventory]++; 
+                        playSound('success');
+                        showMessage(`You bought an ${item.name}! ${DIALOGUE.ROCKY.SUCCESS}`); 
+                    } else {
+                        showMessage(DIALOGUE.ROCKY.TOO_POOR);
+                    }
+                };
                 qOptions.appendChild(btn);
             });
             const closeBtn = document.createElement('button'); closeBtn.className = 'q-btn'; closeBtn.textContent = "Nothing, thanks."; closeBtn.onclick = closeQuestion; qOptions.appendChild(closeBtn);
