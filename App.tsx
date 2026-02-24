@@ -109,6 +109,9 @@ const App: React.FC = () => {
         const VIEW_WIDTH = 5;
         const VIEW_HEIGHT = 5;
 
+        canvas.width = TILE_SIZE * VIEW_WIDTH;
+        canvas.height = TILE_SIZE * VIEW_HEIGHT;
+
         const keys = keysRef.current;
 
         // --- Audio Engine ---
@@ -1169,7 +1172,7 @@ const App: React.FC = () => {
             <style>{`
                 .game-wrapper { margin: 0; background: #1a1a1a; display: flex; flex-direction: row; align-items: center; justify-content: center; height: 100vh; width: 100vw; color: #eee; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
                 .main-container { display: flex; flex-direction: column; align-items: center; position: relative; }
-                canvas { image-rendering: pixelated; border: 4px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); max-width: 100%; max-height: 80vh; background: #1e3a8a; height: auto; }
+                canvas { image-rendering: pixelated; border: 4px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); max-width: 95vw; max-height: 80vh; background: #1e3a8a; }
                 .controls { margin-top: 20px; text-align: center; background: #333; padding: 10px 20px; border-radius: 8px; }
                 kbd { background: #eee; color: #333; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
                 #sideMenu { position: absolute; left: 20px; top: 20px; width: 180px; background: rgba(30, 30, 30, 0.95); border: 2px solid #555; padding: 15px; border-radius: 8px; display: none; flex-direction: column; gap: 10px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 100; }
@@ -1212,6 +1215,7 @@ const App: React.FC = () => {
                 @media (max-width: 1024px) {
                     .game-wrapper { flex-direction: column; height: auto; min-height: 100vh; overflow-y: auto; align-items: center; }
                     .main-container { width: 100%; }
+                    canvas { max-width: 100%; height: auto; }
                     .mobile-controller { display: flex; }
                     .controls { display: none; }
                     .sound-toggle { align-self: center; margin-right: 0; margin-bottom: 20px; margin-top: 20px; }
