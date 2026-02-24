@@ -16,6 +16,32 @@ const App: React.FC = () => {
     const [isGameOver, setIsGameOver] = useState(false);
     const [winSequenceActive, setWinSequenceActive] = useState(false);
     const winTimerRef = useRef(0);
+    const [isMobile, setIsMobile] = useState(false);
+    const keysRef = useRef<{[key:string]: boolean}>({});
+    const initAudioRef = useRef<() => void>(null);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            const isSmall = window.innerWidth < 1024;
+            setIsMobile(isTouch || isSmall);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    const handleVirtualDown = (code: string) => {
+        if (initAudioRef.current) initAudioRef.current();
+        keysRef.current[code] = true;
+    };
+    const handleVirtualUp = (code: string) => {
+        keysRef.current[code] = false;
+    };
+    const simulateKey = (code: string) => {
+        if (initAudioRef.current) initAudioRef.current();
+        window.dispatchEvent(new KeyboardEvent('keydown', { code }));
+    };
 
     // Component-scope reset function to trigger a fresh start via useEffect re-run
     const triggerReset = () => {
@@ -83,8 +109,7 @@ const App: React.FC = () => {
         const VIEW_WIDTH = 5;
         const VIEW_HEIGHT = 5;
 
-        canvas.width = TILE_SIZE * VIEW_WIDTH;
-        canvas.height = TILE_SIZE * VIEW_HEIGHT;
+        const keys = keysRef.current;
 
         // --- Audio Engine ---
         const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -297,6 +322,7 @@ const App: React.FC = () => {
         };
 
         const initAudio = () => {
+            initAudioRef.current = initAudio;
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
@@ -501,7 +527,6 @@ const App: React.FC = () => {
              if(selectedStartOption === 2 && setEl) setEl.classList.add('selected');
         }
 
-        const keys: {[key:string]: boolean} = {};
         const keyHandler = (e: KeyboardEvent) => {
             initAudio();
             if (isControllerWizardActive) return; 
@@ -1144,7 +1169,7 @@ const App: React.FC = () => {
             <style>{`
                 .game-wrapper { margin: 0; background: #1a1a1a; display: flex; flex-direction: row; align-items: center; justify-content: center; height: 100vh; width: 100vw; color: #eee; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
                 .main-container { display: flex; flex-direction: column; align-items: center; position: relative; }
-                canvas { image-rendering: pixelated; border: 4px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); max-width: 95vw; max-height: 80vh; background: #1e3a8a; }
+                canvas { image-rendering: pixelated; border: 4px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); max-width: 100%; max-height: 80vh; background: #1e3a8a; height: auto; }
                 .controls { margin-top: 20px; text-align: center; background: #333; padding: 10px 20px; border-radius: 8px; }
                 kbd { background: #eee; color: #333; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
                 #sideMenu { position: absolute; left: 20px; top: 20px; width: 180px; background: rgba(30, 30, 30, 0.95); border: 2px solid #555; padding: 15px; border-radius: 8px; display: none; flex-direction: column; gap: 10px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 100; }
@@ -1173,6 +1198,31 @@ const App: React.FC = () => {
                 textarea { width: 100%; height: 100px; background: #222; color: #4da862; border: 1px solid #555; padding: 10px; font-family: monospace; resize: none; }
                 .sound-toggle { margin-right: 20px; padding: 15px; background: #333; border: 4px solid #4da862; color: #fff; cursor: pointer; font-family: inherit; font-size: 1.1rem; border-radius: 8px; transition: all 0.2s; z-index: 400; align-self: flex-end; margin-bottom: 50px; }
                 .sound-toggle:hover { background: #4da862; }
+
+                .mobile-controller { display: none; width: 100%; padding: 20px; background: #222; border-top: 2px solid #444; justify-content: space-around; align-items: center; user-select: none; -webkit-tap-highlight-color: transparent; }
+                .dpad { display: grid; grid-template-areas: ". up ." "left . right" ". down ."; gap: 8px; }
+                .dbtn { width: 60px; height: 60px; background: #333; border: 2px solid #555; border-radius: 12px; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+                .dbtn:active { background: #4da862; }
+                .dbtn-up { grid-area: up; } .dbtn-down { grid-area: down; } .dbtn-left { grid-area: left; } .dbtn-right { grid-area: right; }
+                .action-buttons { display: flex; gap: 20px; }
+                .abtn { width: 80px; height: 80px; border-radius: 50%; border: 4px solid #4da862; background: #333; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+                .abtn:active { background: #4da862; }
+                .abtn.menu { border-color: #fbc02d; width: 70px; height: 70px; font-size: 0.9rem; }
+
+                @media (max-width: 1024px) {
+                    .game-wrapper { flex-direction: column; height: auto; min-height: 100vh; overflow-y: auto; align-items: center; }
+                    .main-container { width: 100%; }
+                    .mobile-controller { display: flex; }
+                    .controls { display: none; }
+                    .sound-toggle { align-self: center; margin-right: 0; margin-bottom: 20px; margin-top: 20px; }
+                    #questionModal, #inventoryModal, #saveModal, #loadModal, #settingsModal { width: 95%; min-width: 0; max-width: none; }
+                }
+                @media (orientation: landscape) and (max-width: 1024px) {
+                    .game-wrapper { flex-direction: row; align-items: stretch; }
+                    .main-container { flex: 1; }
+                    .mobile-controller { width: 280px; height: 100vh; flex-direction: column; border-top: none; border-left: 2px solid #444; }
+                    .action-buttons { flex-direction: column; }
+                }
             `}</style>
             <button className="sound-toggle" onClick={(e) => { toggleMute(); e.currentTarget.blur(); }} onKeyDown={(e) => { if (e.code === 'Space') e.preventDefault(); }}>{isMuted ? '🔇 Sound Off' : '🔊 Sound On'}</button>
             <div className="main-container">
@@ -1196,6 +1246,30 @@ const App: React.FC = () => {
                 <div id="wizardOverlay"><div id="wizardText">PRESS BUTTON FOR UP</div></div>
                 <canvas id="gameCanvas"></canvas>
                 <div className="controls">Use <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or <kbd>Arrows</kbd> to explore. <kbd>Space</kbd> for Menu. <kbd>Enter</kbd> to Interact.</div>
+                {isMobile && (
+                    <div className="mobile-controller">
+                        <div className="dpad">
+                            <button className="dbtn dbtn-up" 
+                                onTouchStart={(e) => { e.preventDefault(); handleVirtualDown('ArrowUp'); }} 
+                                onTouchEnd={(e) => { e.preventDefault(); handleVirtualUp('ArrowUp'); }}>▲</button>
+                            <button className="dbtn dbtn-left" 
+                                onTouchStart={(e) => { e.preventDefault(); handleVirtualDown('ArrowLeft'); }} 
+                                onTouchEnd={(e) => { e.preventDefault(); handleVirtualUp('ArrowLeft'); }}>◀</button>
+                            <button className="dbtn dbtn-right" 
+                                onTouchStart={(e) => { e.preventDefault(); handleVirtualDown('ArrowRight'); }} 
+                                onTouchEnd={(e) => { e.preventDefault(); handleVirtualUp('ArrowRight'); }}>▶</button>
+                            <button className="dbtn dbtn-down" 
+                                onTouchStart={(e) => { e.preventDefault(); handleVirtualDown('ArrowDown'); }} 
+                                onTouchEnd={(e) => { e.preventDefault(); handleVirtualUp('ArrowDown'); }}>▼</button>
+                        </div>
+                        <div className="action-buttons">
+                            <button className="abtn menu" 
+                                onTouchStart={(e) => { e.preventDefault(); simulateKey('Space'); }}>MENU</button>
+                            <button className="abtn" 
+                                onTouchStart={(e) => { e.preventDefault(); simulateKey('Enter'); }}>ACTION</button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
