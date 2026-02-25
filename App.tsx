@@ -352,23 +352,19 @@ const App: React.FC = () => {
                 }
                 map.push(row);
             }
-            for(let i=0; i<6; i++) {
-                const rx = 1 + Math.floor(Math.random() * (width-2));
-                const ry = 1 + Math.floor(Math.random() * (height-2));
-                if (depth === 10) {
-                        if ((rx === width-2 && ry === 1) || (rx === 1 && ry === 1) || (rx === 1 && ry === height-2)) {
-                            continue;
-                        }
-                }
-                map[ry][rx] = 12;
-            }
+
             if (depth === 10) {
                 map[1][width-2] = 21;
                 map[1][1] = 22;
                 map[height-2][1] = 29;
+                for(let i=0; i<6; i++) {
+                    const rx = 1 + Math.floor(Math.random() * (width-2));
+                    const ry = 1 + Math.floor(Math.random() * (height-2));
+                    if (map[ry][rx] === 13) map[ry][rx] = 12;
+                }
             } else {
+                let upX = -1, upY = -1, downX = -1, downY = -1;
                 let upPlaced = false;
-                let upX = -1, upY = -1;
                 while(!upPlaced) {
                     const rx = 1 + Math.floor(Math.random() * (width-2));
                     const ry = 1 + Math.floor(Math.random() * (height-2));
@@ -382,10 +378,21 @@ const App: React.FC = () => {
                     while(!downPlaced) {
                         const rx = 1 + Math.floor(Math.random() * (width-2));
                         const ry = 1 + Math.floor(Math.random() * (height-2));
-                        if(map[ry][rx] === 13) {
+                        const distToUp = Math.abs(rx - upX) + Math.abs(ry - upY);
+                        if(map[ry][rx] === 13 && distToUp > 2) {
                             map[ry][rx] = 20;
-                            downPlaced = true;
+                            downPlaced = true; downX = rx; downY = ry;
                         }
+                    }
+                }
+                // Place walls but avoid tiles adjacent to stairs
+                for(let i=0; i<6; i++) {
+                    const rx = 1 + Math.floor(Math.random() * (width-2));
+                    const ry = 1 + Math.floor(Math.random() * (height-2));
+                    const distToUp = Math.abs(rx - upX) + Math.abs(ry - upY);
+                    const distToDown = downX !== -1 ? Math.abs(rx - downX) + Math.abs(ry - downY) : 999;
+                    if (map[ry][rx] === 13 && distToUp > 1 && distToDown > 1) {
+                        map[ry][rx] = 12;
                     }
                 }
                 let crystalPlaced = false;
@@ -393,7 +400,8 @@ const App: React.FC = () => {
                     const rx = 1 + Math.floor(Math.random() * (width-2));
                     const ry = 1 + Math.floor(Math.random() * (height-2));
                     const distToUp = Math.abs(rx - upX) + Math.abs(ry - upY);
-                    if(map[ry][rx] === 13 && distToUp > 1) {
+                    const distToDown = downX !== -1 ? Math.abs(rx - downX) + Math.abs(ry - downY) : 999;
+                    if(map[ry][rx] === 13 && distToUp > 1 && distToDown > 1) {
                         map[ry][rx] = 22;
                         crystalPlaced = true;
                     }
@@ -904,12 +912,36 @@ const App: React.FC = () => {
                         currentCaveDepth++; 
                         if (currentCaveDepth === 10) player.reachedDepth10 = true;
                         currentMap = caveLevels[currentCaveDepth];
-                        for(let r=0; r<currentMap.length; r++) for(let c=0; c<currentMap[0].length; c++) if (currentMap[r][c] === 21) { player.screenX = c * TILE_SIZE; player.screenY = (r < currentMap.length - 1 && currentMap[r+1][c] !== 12) ? (r+1)*TILE_SIZE : (r>0 && currentMap[r-1][c] !== 12) ? (r-1)*TILE_SIZE : r*TILE_SIZE; return; }
+                        for(let r=0; r<currentMap.length; r++) {
+                            for(let c=0; c<currentMap[0].length; c++) {
+                                if (currentMap[r][c] === 21) {
+                                    player.screenX = c * TILE_SIZE;
+                                    if (r < currentMap.length - 1 && currentMap[r+1][c] === 13) player.screenY = (r+1)*TILE_SIZE;
+                                    else if (r > 0 && currentMap[r-1][c] === 13) player.screenY = (r-1)*TILE_SIZE;
+                                    else if (c < currentMap[0].length - 1 && currentMap[r][c+1] === 13) { player.screenX = (c+1)*TILE_SIZE; player.screenY = r*TILE_SIZE; }
+                                    else if (c > 0 && currentMap[r][c-1] === 13) { player.screenX = (c-1)*TILE_SIZE; player.screenY = r*TILE_SIZE; }
+                                    else player.screenY = r*TILE_SIZE;
+                                    return;
+                                }
+                            }
+                        }
                         return;
                     }
                     if (targetTile === 21 && currentCaveDepth > 0) {
                         currentCaveDepth--; currentMap = caveLevels[currentCaveDepth];
-                        for(let r=0; r<currentMap.length; r++) for(let c=0; c<currentMap[0].length; c++) if (currentMap[r][c] === 20) { player.screenX = c * TILE_SIZE; player.screenY = (r < currentMap.length - 1 && currentMap[r+1][c] !== 12) ? (r+1)*TILE_SIZE : (r>0 && currentMap[r-1][c] !== 12) ? (r-1)*TILE_SIZE : r*TILE_SIZE; return; }
+                        for(let r=0; r<currentMap.length; r++) {
+                            for(let c=0; c<currentMap[0].length; c++) {
+                                if (currentMap[r][c] === 20) {
+                                    player.screenX = c * TILE_SIZE;
+                                    if (r < currentMap.length - 1 && currentMap[r+1][c] === 13) player.screenY = (r+1)*TILE_SIZE;
+                                    else if (r > 0 && currentMap[r-1][c] === 13) player.screenY = (r-1)*TILE_SIZE;
+                                    else if (c < currentMap[0].length - 1 && currentMap[r][c+1] === 13) { player.screenX = (c+1)*TILE_SIZE; player.screenY = r*TILE_SIZE; }
+                                    else if (c > 0 && currentMap[r][c-1] === 13) { player.screenX = (c-1)*TILE_SIZE; player.screenY = r*TILE_SIZE; }
+                                    else player.screenY = r*TILE_SIZE;
+                                    return;
+                                }
+                            }
+                        }
                         return;
                     }
                     if (canPass) { player.screenX = nextX; player.screenY = nextY; }
