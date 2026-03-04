@@ -72,6 +72,22 @@ export const DIALOGUE = {
             { label: "The Law of Superposition", key: 'superposition' }
         ]
     },
+    MR_PENSE: {
+        GREETING: "Mr. Pense: Welcome to our field classroom! Are you ready to study some real-world geology?",
+        TOPICS_PROMPT: "Mr. Pense: Which geological concept should we review today?",
+        TOPICS: [
+            { label: "The Rock Cycle", key: 'rockCycle' },
+            { label: "Weathering, Erosion, & Deposition", key: 'erosion' },
+            { label: "The Law of Superposition", key: 'superposition' }
+        ]
+    },
+    MR_PENSE_INDY: {
+        GREETING: "Mr. Pense: I decided to take a break and hang out in this cool cave.",
+        GIVE_SHOVEL: "Mr. Pense: You found some soft earth? Here, take this Shovel. I seem to have lost my teaching fossils down there. If you find them, let me know!",
+        TRADE_PROMPT: "Mr. Pense: That... is an Index Fossil! Truly remarkable. I've been looking for one of those for my collection! Trade you my spare hat for it?",
+        GIVE_HAT: "Mr. Pense: It suits you! Wear it with pride, fellow explorer.",
+        ALREADY_TRADED: "Mr. Pense: How's the hat? Looking sharp!"
+    },
     DINO: {
         GREETING: "Rex: *RAWR!* I mean... hello! I am Rex. Do you have any fossils? I LOVE FOSSILS!",
         EXCITED: "Rex: OH MY! Is that a real fossil? It's magnificent! Here, take this as a token of my appreciation. It's a very rare Index Fossil!",

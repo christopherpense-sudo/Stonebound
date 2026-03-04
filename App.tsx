@@ -465,7 +465,7 @@ const App: React.FC = () => {
             dir: 'down', frame: 0, isMoving: false, speed: 5, animTimer: 0,
             inventory: { echoPrisms: 0, quickEscapes: 0, hammer: 0, key: 0, sediment: 0, shovel: 0, fossils: 0, indexFossil: 0, explorerHat: 0, metamorphicPebble: 0, arcaneEye: 0, instantTeleport: 0 } as any,
             hasPickupAbility: false, foundDigSite: false, hasActivatedStonehenge: false, wearingHat: false,
-            reachedDepth10: false
+            reachedDepth10: false, isIndyMode: false
         };
 
         function generateKeyLocation() {
@@ -495,7 +495,7 @@ const App: React.FC = () => {
             player.inventory.explorerHat = 0; player.inventory.metamorphicPebble = 0; player.inventory.arcaneEye = 0;
             player.inventory.instantTeleport = 0; player.hasPickupAbility = false;
             player.foundDigSite = false; player.hasActivatedStonehenge = false; player.wearingHat = false;
-            player.reachedDepth10 = false;
+            player.reachedDepth10 = false; player.isIndyMode = false;
              if (worldMap[16][1] === 27) worldMap[16][1] = 26;
              worldMap[24][26] = 5;
              for(let y=0; y<worldMap.length; y++) {
@@ -523,6 +523,7 @@ const App: React.FC = () => {
             const input = loadCodeInput.value.trim();
             if(!input) return;
             if (applyCheat(input, { worldMap, caveLevels, interiorMap, player })) {
+                generateAssets(Assets, getActiveCrystalCount, player);
                 closeLoadModalFunc();
                 if (gameState === 'start') { gameState = 'overworld'; currentMap = worldMap; startScreen.style.display = 'none'; setGameStarted(true); }
                 return;
@@ -537,6 +538,7 @@ const App: React.FC = () => {
             if (gameState === 'overworld') currentMap = worldMap;
             else if (gameState === 'interior') currentMap = interiorMap;
             else if (gameState === 'cave') currentMap = caveLevels[currentCaveDepth];
+            generateAssets(Assets, getActiveCrystalCount, player);
             setGameStarted(true);
             closeLoadModalFunc(); startScreen.style.display = 'none'; if(isMenuOpen) toggleMenu();
         }
@@ -1007,7 +1009,11 @@ const App: React.FC = () => {
                     if (tile === 38) { showMrArnoldDialog(); return; }
                     if (tile === 39) { showDinoDialog(); return; }
                     if (tile === 15) { 
-                        if (player.foundDigSite && player.inventory.shovel === 0) { player.inventory.shovel = 1; showMessage(DIALOGUE.INDIANA_BONES.GIVE_SHOVEL); }
+                        if (player.foundDigSite && player.inventory.shovel === 0) { 
+                            player.inventory.shovel = 1; 
+                            const msg = player.isIndyMode ? DIALOGUE.MR_PENSE_INDY.GIVE_SHOVEL : DIALOGUE.INDIANA_BONES.GIVE_SHOVEL;
+                            showMessage(msg); 
+                        }
                         else showIndianaBonesDialog();
                         return;
                     }
@@ -1134,24 +1140,25 @@ const App: React.FC = () => {
 
         function showIndianaBonesDialog() {
             isQuestionOpen = true; Object.keys(keys).forEach(key => keys[key] = false); qImage.style.display = 'none'; qOptions.innerHTML = '';
+            const indyDialogue = player.isIndyMode ? DIALOGUE.MR_PENSE_INDY : DIALOGUE.INDIANA_BONES;
             
             if (player.inventory.explorerHat > 0) {
-                qText.textContent = DIALOGUE.INDIANA_BONES.ALREADY_TRADED;
+                qText.textContent = indyDialogue.ALREADY_TRADED;
                 const btn = document.createElement('button'); btn.className = 'q-btn'; btn.textContent = "I love it!"; btn.onclick = closeQuestion; qOptions.appendChild(btn);
             } else if (player.inventory.indexFossil > 0) {
-                qText.textContent = DIALOGUE.INDIANA_BONES.TRADE_PROMPT;
+                qText.textContent = indyDialogue.TRADE_PROMPT;
                 const tradeBtn = document.createElement('button'); tradeBtn.className = 'q-btn'; tradeBtn.textContent = "Yes, let's trade!"; 
                 tradeBtn.onclick = () => {
                     player.inventory.indexFossil = 0;
                     player.inventory.explorerHat = 1;
                     playSound('success');
-                    showMessage(DIALOGUE.INDIANA_BONES.GIVE_HAT);
+                    showMessage(indyDialogue.GIVE_HAT);
                 };
                 qOptions.appendChild(tradeBtn);
                 const declineBtn = document.createElement('button'); declineBtn.className = 'q-btn'; declineBtn.textContent = "Not right now."; declineBtn.onclick = closeQuestion;
                 qOptions.appendChild(declineBtn);
             } else {
-                qText.textContent = DIALOGUE.INDIANA_BONES.GREETING;
+                qText.textContent = indyDialogue.GREETING;
                 const closeBtn = document.createElement('button'); closeBtn.className = 'q-btn'; closeBtn.textContent = "I'll be careful."; closeBtn.onclick = closeQuestion; qOptions.appendChild(closeBtn);
             }
             selectedQuestionIndex = 0; updateQuestionUI(); questionModal.style.display = 'flex';

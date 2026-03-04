@@ -1,4 +1,4 @@
-import { renderMrPense } from './player';
+import { renderMrPense, renderIndianaBones } from './player';
 
 export const TILE_SIZE = 128;
 
@@ -10,7 +10,7 @@ export interface AssetsType {
 export function generateAssets(
     Assets: AssetsType, 
     getActiveCrystalCount: () => number, 
-    player: { isMoving: boolean, wearingHat: boolean }
+    player: { isMoving: boolean, wearingHat: boolean, isIndyMode?: boolean }
 ) {
     Assets.tiles.grass = (ctx: CanvasRenderingContext2D, time: number) => {
         ctx.fillStyle = '#4da862'; 
@@ -517,6 +517,10 @@ export function generateAssets(
     };
 
     Assets.tiles.skeletonNpc = (ctx: CanvasRenderingContext2D, time: number) => {
+        if (player.isIndyMode) {
+            renderMrPense('down', 0, false, false)(ctx);
+            return;
+        }
         const bob = Math.sin(time * 0.005) * 2, armSway = Math.sin(time * 0.005) * 0.15;
         ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(64, 110, 20, 8, 0, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = '#e0e0e0';
@@ -642,7 +646,11 @@ export function generateAssets(
 
     ['up', 'down', 'left', 'right'].forEach(d => {
         for(let f=0; f<4; f++) { 
-            Assets.character[d as keyof typeof Assets.character][f] = renderMrPense(d, f, player.isMoving, player.wearingHat); 
+            if (player.isIndyMode) {
+                Assets.character[d as keyof typeof Assets.character][f] = renderIndianaBones(d, f, player.isMoving);
+            } else {
+                Assets.character[d as keyof typeof Assets.character][f] = renderMrPense(d, f, player.isMoving, player.wearingHat); 
+            }
         }
     });
 }

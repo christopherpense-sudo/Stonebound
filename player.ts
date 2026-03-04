@@ -206,3 +206,111 @@ export const renderMrPense = (dir: string, frame: number, isMoving: boolean, wea
         }
     };
 };
+
+export const renderIndianaBones = (dir: string, frame: number, isMoving: boolean) => {
+    return (ctx: CanvasRenderingContext2D) => {
+        const bob = (frame % 2 === 0 && isMoving) ? 4 : 0;
+        const walkOffset = (frame === 1) ? -8 : (frame === 3 ? 8 : 0);
+        const p = 4;
+        const isSide = dir === 'left' || dir === 'right';
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath(); 
+        ctx.ellipse(16 * p, 28.5 * p, 5 * p, 2 * p, 0, 0, Math.PI * 2); 
+        ctx.fill();
+
+        // Bones (Legs)
+        ctx.fillStyle = '#e0e0e0';
+        const lx = isSide ? (14.5 * p) : (12 * p + walkOffset);
+        const rx = isSide ? (14.5 * p) : (16 * p - walkOffset);
+        
+        if (isSide) {
+            ctx.fillRect(lx - 2 * p, 21 * p - bob + (walkOffset / 2), 2 * p, 8 * p);
+            ctx.fillRect(rx + 2 * p, 21 * p - bob - (walkOffset / 2), 2 * p, 8 * p);
+        } else {
+            ctx.fillRect(lx, 21 * p - bob, 2 * p, 8 * p);
+            ctx.fillRect(rx, 21 * p - bob, 2 * p, 8 * p);
+        }
+
+        // Ribs / Spine
+        const spineY = 13 * p - bob, spineH = 8 * p;
+        ctx.fillStyle = '#e0e0e0';
+        ctx.fillRect(15 * p, spineY, 2 * p, spineH); // Spine
+        ctx.fillRect(13.5 * p, spineY + 1 * p, 5 * p, 1.5 * p); // Rib 1
+        ctx.fillRect(13.5 * p, spineY + 3 * p, 5 * p, 1.5 * p); // Rib 2
+        ctx.fillRect(14 * p, spineY + 5 * p, 4 * p, 1.5 * p); // Rib 3
+
+        // Arms
+        const armWidth = 1.5 * p, lArmOff = walkOffset / 2, rArmOff = -walkOffset / 2;
+        if (dir === 'down' || dir === 'up') {
+            ctx.save(); 
+            ctx.translate(13.5 * p, spineY + 1 * p); 
+            ctx.rotate(0.1 * (lArmOff / 4)); 
+            ctx.fillRect(-armWidth, 0, armWidth, 7 * p); 
+            ctx.restore();
+            
+            ctx.save(); 
+            ctx.translate(18.5 * p, spineY + 1 * p); 
+            ctx.rotate(-0.1 * (rArmOff / 4)); 
+            ctx.fillRect(0, 0, armWidth, 7 * p); 
+            ctx.restore();
+        } else {
+            const isR = dir === 'right'; 
+            ctx.save(); 
+            ctx.translate(16 * p, spineY + 1 * p); 
+            ctx.rotate(isR ? (0.2 * (lArmOff / 4)) : (-0.2 * (lArmOff / 4))); 
+            ctx.fillRect(-armWidth / 2, 0, armWidth, 7 * p); 
+            ctx.restore();
+        }
+
+        // Head (Skull)
+        ctx.fillStyle = '#e0e0e0';
+        const headY = 8 * p - bob;
+        ctx.fillRect(13.5 * p, headY, 5 * p, 4.5 * p);
+        
+        // Eyes
+        if (dir !== 'up') {
+            ctx.fillStyle = '#1a1a1a';
+            if (dir === 'down') {
+                ctx.fillRect(14.5 * p, headY + 1 * p, 1 * p, 1 * p);
+                ctx.fillRect(16.5 * p, headY + 1 * p, 1 * p, 1 * p);
+            } else if (isSide) {
+                const isL = dir === 'left';
+                ctx.fillRect(isL ? 14 * p : 17 * p, headY + 1 * p, 1 * p, 1 * p);
+            }
+        }
+
+        // Hat (Always on for Indy)
+        const cX = 16 * p;
+        // 1. Brim
+        ctx.fillStyle = '#3e2723'; 
+        if (isSide) {
+            const bx = cX - 7 * p;
+            ctx.fillRect(bx, headY - 0.5 * p, 14 * p, 2 * p);
+            ctx.fillStyle = '#5d4037'; 
+            ctx.fillRect(bx, headY - 0.5 * p, 14 * p, 0.8 * p);
+        } else {
+            const bx = cX - 6 * p;
+            ctx.fillRect(bx, headY - 0.5 * p, 12 * p, 2 * p);
+            ctx.fillStyle = '#5d4037'; 
+            ctx.fillRect(bx, headY - 0.5 * p, 12 * p, 0.8 * p);
+        }
+        
+        // 2. Crown
+        ctx.fillStyle = '#6d4c41'; 
+        if (isSide) {
+            ctx.fillRect(cX - 4 * p, headY - 4.5 * p, 8 * p, 4.5 * p);
+        } else {
+            ctx.fillRect(cX - 3.5 * p, headY - 4.5 * p, 7 * p, 4.5 * p);
+        }
+        
+        // 3. Band
+        ctx.fillStyle = '#212121'; 
+        if (isSide) {
+            ctx.fillRect(cX - 4 * p, headY - 1.5 * p, 8 * p, 1.2 * p);
+        } else {
+            ctx.fillRect(cX - 3.5 * p, headY - 1.5 * p, 7 * p, 1.2 * p);
+        }
+    };
+};

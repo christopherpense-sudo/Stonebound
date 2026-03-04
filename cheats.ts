@@ -28,6 +28,15 @@ export const applyCheat = (code: string, gameData: any): boolean => {
         return true;
     }
     
+    // Cheat: "LETS GO INDY"
+    // Purpose: Play as Indiana Bones, start with shovel, Mr. Pense in cave.
+    if (cleanCode === "LETS GO INDY") {
+        gameData.player.isIndyMode = true;
+        gameData.player.inventory.shovel = 1;
+        alert("CHEAT ACTIVATED: ADVENTURE AWAITS, INDY!");
+        return true;
+    }
+    
     // Add more cheats here in the future
     /*
     if (cleanCode === "ANOTHER CHEAT") {
