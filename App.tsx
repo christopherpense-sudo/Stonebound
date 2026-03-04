@@ -893,7 +893,7 @@ const App: React.FC = () => {
                 if (gridY >= 0 && gridY < MAP_ROWS() && gridX >= 0 && gridX < MAP_COLS()) {
                     const targetTile = currentMap[gridY][gridX];
                     let canPass = true;
-                    if ([2,9,12,15,16,17,18,19,22,23,24,26,27,32,33,34,35,36,37,38,39].includes(targetTile) || (targetTile === 29 && (gameState === 'cave' || player.hasActivatedStonehenge))) canPass = false; 
+                    if ([2,9,12,15,16,17,18,19,26,27,32,33,34,35,36,37,38,39].includes(targetTile) || (targetTile === 29 && (gameState === 'cave' || player.hasActivatedStonehenge))) canPass = false; 
                     if (targetTile === 3) { const lx = (nextX + TILE_SIZE/2) % TILE_SIZE, ly = (nextY + TILE_SIZE*0.95) % TILE_SIZE; if (lx > 45 && lx < 85 && ly > 80 && ly < 120) canPass = false; }
                     if (targetTile === 5) { const lx = (nextX + TILE_SIZE/2) % TILE_SIZE, ly = (nextY + TILE_SIZE*0.95) % TILE_SIZE; if (lx > 30 && lx < 100 && ly > 60 && ly < 105) canPass = false; }
                     if (targetTile === 7) { 
