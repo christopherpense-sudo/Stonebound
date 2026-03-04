@@ -17,6 +17,8 @@ const App: React.FC = () => {
     const [winSequenceActive, setWinSequenceActive] = useState(false);
     const winTimerRef = useRef(0);
     const [isMobile, setIsMobile] = useState(false);
+    const [playTime, setPlayTime] = useState(0);
+    const [gameStarted, setGameStarted] = useState(false);
     const keysRef = useRef<{[key:string]: boolean}>({});
     const initAudioRef = useRef<() => void>(null);
 
@@ -43,11 +45,29 @@ const App: React.FC = () => {
         window.dispatchEvent(new KeyboardEvent('keydown', { code }));
     };
 
+    useEffect(() => {
+        let interval: any;
+        if (gameStarted && !isGameOver) {
+            interval = setInterval(() => {
+                setPlayTime(prev => prev + 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [gameStarted, isGameOver]);
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
     // Component-scope reset function to trigger a fresh start via useEffect re-run
     const triggerReset = () => {
         setIsGameOver(false);
         setWinSequenceActive(false);
         winTimerRef.current = 0;
+        setPlayTime(0);
+        setGameStarted(false);
         setResetKey(prev => prev + 1);
     };
 
@@ -464,6 +484,8 @@ const App: React.FC = () => {
         }
 
         function resetPlayer() {
+            setGameStarted(true);
+            setPlayTime(0);
             gameState = 'overworld'; currentMap = worldMap; currentCaveDepth = 0;
             player.screenX = 6 * TILE_SIZE; player.screenY = 15 * TILE_SIZE;
             player.dir = 'down'; player.frame = 0; player.isMoving = false;
@@ -502,7 +524,7 @@ const App: React.FC = () => {
             if(!input) return;
             if (applyCheat(input, { worldMap, caveLevels, interiorMap, player })) {
                 closeLoadModalFunc();
-                if (gameState === 'start') { gameState = 'overworld'; currentMap = worldMap; startScreen.style.display = 'none'; }
+                if (gameState === 'start') { gameState = 'overworld'; currentMap = worldMap; startScreen.style.display = 'none'; setGameStarted(true); }
                 return;
             }
             const data = decodeSave(input);
@@ -515,6 +537,7 @@ const App: React.FC = () => {
             if (gameState === 'overworld') currentMap = worldMap;
             else if (gameState === 'interior') currentMap = interiorMap;
             else if (gameState === 'cave') currentMap = caveLevels[currentCaveDepth];
+            setGameStarted(true);
             closeLoadModalFunc(); startScreen.style.display = 'none'; if(isMenuOpen) toggleMenu();
         }
 
@@ -1231,7 +1254,9 @@ const App: React.FC = () => {
                 .start-btn { font-size: 1.5rem; padding: 15px 30px; background: rgba(0, 0, 0, 0.5); border: 4px solid rgba(77, 168, 98, 0.8); color: #fff; cursor: pointer; transition: transform 0.2s; border-radius: 4px; backdrop-filter: blur(4px); text-shadow: 2px 2px 0 #000; }
                 .start-btn:hover, .start-btn.selected { transform: scale(1.1); background: rgba(0, 0, 0, 0.7); border-color: #fff; }
                 textarea { width: 100%; height: 100px; background: #222; color: #4da862; border: 1px solid #555; padding: 10px; font-family: monospace; resize: none; }
-                .sound-toggle { margin-right: 20px; padding: 15px; background: #333; border: 4px solid #4da862; color: #fff; cursor: pointer; font-family: inherit; font-size: 1.1rem; border-radius: 8px; transition: all 0.2s; z-index: 400; align-self: flex-end; margin-bottom: 50px; }
+                .side-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-right: 20px; align-self: flex-end; margin-bottom: 50px; z-index: 400; }
+                .game-timer { background: #333; border: 4px solid #fbc02d; color: #fbc02d; padding: 10px 20px; border-radius: 8px; font-size: 1.5rem; font-weight: bold; min-width: 120px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+                .sound-toggle { padding: 15px; background: #333; border: 4px solid #4da862; color: #fff; cursor: pointer; font-family: inherit; font-size: 1.1rem; border-radius: 8px; transition: all 0.2s; width: 100%; }
                 .sound-toggle:hover { background: #4da862; }
 
                 .mobile-controller { display: none; width: 100%; padding: 20px; background: #222; border-top: 2px solid #444; justify-content: space-around; align-items: center; user-select: none; -webkit-tap-highlight-color: transparent; }
@@ -1250,7 +1275,7 @@ const App: React.FC = () => {
                     canvas { max-width: 100%; height: auto; }
                     .mobile-controller { display: flex; }
                     .controls { display: none; }
-                    .sound-toggle { align-self: center; margin-right: 0; margin-bottom: 20px; margin-top: 20px; }
+                    .side-controls { align-self: center; margin-right: 0; margin-bottom: 20px; margin-top: 20px; }
                     #questionModal, #inventoryModal, #saveModal, #loadModal, #settingsModal { width: 95%; min-width: 0; max-width: none; }
                 }
                 @media (orientation: landscape) and (max-width: 1024px) {
@@ -1260,7 +1285,10 @@ const App: React.FC = () => {
                     .action-buttons { flex-direction: column; }
                 }
             `}</style>
-            <button className="sound-toggle" onClick={(e) => { toggleMute(); e.currentTarget.blur(); }} onKeyDown={(e) => { if (e.code === 'Space') e.preventDefault(); }}>{isMuted ? '🔇 Sound Off' : '🔊 Sound On'}</button>
+            <div className="side-controls">
+                {gameStarted && <div className="game-timer">{formatTime(playTime)}</div>}
+                <button className="sound-toggle" onClick={(e) => { toggleMute(); e.currentTarget.blur(); }} onKeyDown={(e) => { if (e.code === 'Space') e.preventDefault(); }}>{isMuted ? '🔇 Sound Off' : '🔊 Sound On'}</button>
+            </div>
             <div className="main-container">
                 {isGameOver && (
                     <div id="winModal">
